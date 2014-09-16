@@ -25,7 +25,7 @@ module.exports = function (grunt) {
 			}
 			return 'http://localhost:<%= connect.testServer.options.port %>/test/fuelux.html?jquery=' + ver;
 		}),
-		trickyTestUrl: 'http://localhost:<%= connect.testServer.options.port %>/test/fuelux.html?jquery=' + '1.9.1',
+		trickyTestUrls: ['http://localhost:<%= connect.testServer.options.port %>/test/fuelux.html?jquery=' + '1.9.1'],
 		travisCITestUrls: ['http://localhost:<%= connect.testServer.options.port %>/test/fuelux.html?jquery=' + '1.9.1'],
 
 		//Tasks configuration
@@ -214,17 +214,17 @@ module.exports = function (grunt) {
 		},
 		'saucelabs-qunit': {
 			trickyBrowsers: {
-							options: {
-								username: '<%= sauceUser %>',
-								key: '<%= sauceKey %>',
-								tunnelTimeout: 45,
-								testInterval: 3000,
-								tags: [ '<%= sauceUser %>' + "@" + process.env.TRAVIS_BRANCH || '<%= sauceUser %>' +"@local"],
-								browsers: grunt.file.readYAML('sauce_browsers_tricky.yml'),
-								build: process.env.TRAVIS_BUILD_NUMBER || '',
-								testname: process.env.TRAVIS_JOB_ID || Math.floor((new Date()).getTime() / 1000 - 1230768000).toString(),
-								urls: '<%= trickyTestUrl %>'
-							}
+				options: {
+					username: '<%= sauceUser %>',
+					key: '<%= sauceKey %>',
+					tunnelTimeout: 45,
+					testInterval: 3000,
+					tags: [ '<%= sauceUser %>' + "@" + process.env.TRAVIS_BRANCH || '<%= sauceUser %>' +"@local"],
+					browsers: grunt.file.readYAML('sauce_browsers_tricky.yml'),
+					build: process.env.TRAVIS_BUILD_NUMBER || '',
+					testname: process.env.TRAVIS_JOB_ID || Math.floor((new Date()).getTime() / 1000 - 1230768000).toString(),
+					urls: '<%= trickyTestUrls %>'
+				}
 			},
 			travisCIBrowsers: {
 					options: {
@@ -232,11 +232,13 @@ module.exports = function (grunt) {
 						key: '<%= sauceKey %>',
 						tunnelTimeout: 45,
 						testInterval: 3000,
+						sauceConfig: {'video-upload-on-pass': false, 'idle-timeout': 60},
 						tags: [ '<%= sauceUser %>' + "@" + process.env.TRAVIS_BRANCH || '<%= sauceUser %>@local'],
 						browsers: grunt.file.readYAML('sauce_browsers.yml'),
 						build: process.env.TRAVIS_BUILD_NUMBER || '',
 						testname: process.env.TRAVIS_JOB_ID || 'grunt-<%= grunt.template.today("dddd, mmmm dS, yyyy, h:MM:ss TT") %>',
-						urls: '<%= travisCITestUrls %>'
+						urls: '<%= travisCITestUrls %>',
+						maxRetries: 10
 					}
 			},
 			all: {
