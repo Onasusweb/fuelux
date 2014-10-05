@@ -2872,16 +2872,16 @@
 							$entity.data( value );
 						}
 
-						// Decorate $entity with data making the element
-						// easily accessable with libraries like jQuery.
+						// Decorate $entity with data or other attributes making the
+						// element easily accessable with libraries like jQuery.
 						//
 						// Values are contained within the object returned
-						// for folders and items as dataAttributes:
+						// for folders and items as attr:
 						//
 						// {
 						//     name: "An Item",
 						//     type: 'item',
-						//     dataAttributes = {
+						//     attr = {
 						//         'classes': 'required-item red-text',
 						//         'data-parent': parentId,
 						//         'guid': guid,
@@ -2890,11 +2890,11 @@
 						// };
 
 						// add attributes to tree-branch or tree-item
-						var dataAttributes = value.dataAttributes || [];
-						$.each( dataAttributes, function( key, value ) {
+						var attr = value[ 'attr' ] || value.dataAttributes || [];
+						$.each( attr, function( key, value ) {
 							switch ( key ) {
+								case 'cssClass':
 								case 'class':
-								case 'classes':
 								case 'className':
 									$entity.addClass( value );
 									break;
@@ -3874,10 +3874,18 @@
 				e.preventDefault();
 				this.$addItem.val( '' );
 
-				this.addItems( {
-					text: $item.html(),
-					value: $item.data( 'value' )
-				}, true );
+				if ( $item.data( 'attr' ) ) {
+					this.addItems( {
+						text: $item.html(),
+						value: $item.data( 'value' ),
+						attr: JSON.parse( $item.data( 'attr' ) )
+					}, true );
+				} else {
+					this.addItems( {
+						text: $item.html(),
+						value: $item.data( 'value' )
+					}, true );
+				}
 
 				// needs to be after addItems for IE
 				this._closeSuggestions();
@@ -4311,20 +4319,28 @@
 
 			_openSuggestions: function( e, data ) {
 				var markup = '';
+				var $suggestionList = $( '<ul>' );
 
 				if ( this.callbackId !== e.timeStamp ) {
 					return false;
 				}
 
 				if ( data.data && data.data.length ) {
+
 					$.each( data.data, function( index, value ) {
 						var val = value.value ? value.value : value.text;
-						markup += '<li data-value="' + val + '">' + value.text + '</li>';
+
+						// markup concatentation is 10x faster, but does not allow data store
+						var $suggestion = $( '<li data-value="' + val + '">' + value.text + '</li>' );
+
+						if ( value.attr ) {
+							$suggestion.data( 'attr', JSON.stringify( value.attr ) );
+						}
+						$suggestionList.append( $suggestion );
 					} );
 
 					// suggestion dropdown
-
-					this.$suggest.html( '' ).append( markup );
+					this.$suggest.html( '' ).append( $suggestionList.children() );
 					$( document.body ).trigger( 'suggested.fu.pillbox', this.$suggest );
 				}
 			},
@@ -4557,6 +4573,15 @@
 			constructor: Repeater,
 
 			clear: function( options ) {
+				options = options || {};
+
+				if ( !options.preserve ) {
+					//Just trash everything because preserve is false
+					this.$canvas.empty();
+					return;
+				}
+				//otherwise, scan and preserve if appropriate...
+
 				var scan = function( cont ) {
 					var keep = [];
 					cont.children().each( function() {
@@ -4575,12 +4600,14 @@
 					cont.append( keep );
 				};
 
-				options = options || {};
 
-				if ( !options.preserve ) {
-					this.$canvas.empty();
-				} else if ( !this.infiniteScrollingEnabled || options.clearInfinite ) {
+				//Make sure not to trash everything if infiniteScoll is enabled unless they explicitly say to do so
+				if ( !this.infiniteScrollingEnabled ) {
 					scan( this.$canvas );
+				} else if ( options.clearInfinite ) {
+					scan( this.$canvas );
+				} else {
+					//do nothing for some reason... Is this a bug?
 				}
 			},
 
@@ -5124,6 +5151,7 @@
 			$.fn.repeater = old;
 			return this;
 		};
+
 
 
 	} )( jQuery );
